@@ -8,8 +8,8 @@ import {
 } from "@mikro-orm/postgresql";
 import mikroOrmConfig from "./mikro-orm.config.js";
 import express from "express";
-import { DifficultyTable } from "./entities/DifficultyTable.js";
-import { Song } from "./entities/Song.js";
+import { DifficultyTable } from "./entities/DifficultyTable.entity.js";
+import { Song } from "./entities/Song.entity.js";
 
 export const DI = {} as {
   orm: MikroORM;

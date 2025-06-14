@@ -8,6 +8,7 @@
     "@mikro-orm/reflection": "^6.4.16",
     "@types/express": "^5.0.3",
     "@types/md5": "^2.3.5",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.28.0",
     "globals": "^16.2.0",
     "typescript": "^5.8.3",
@@ -16,10 +17,12 @@
   "dependencies": {
     "@mikro-orm/core": "^6.4.16",
     "@mikro-orm/postgresql": "^6.4.16",
+    "axios": "^1.10.0",
     "cheerio": "^1.1.0",
     "express": "^5.1.0",
     "md5": "^2.3.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "dev": "tsx --watch src/index.ts",
@@ -27,9 +30,11 @@
     "start": "node dist/index.js"
   },
   "mikro-orm": {
+    "useTsNode": true,
     "configPaths": [
-      "./src/mikro-orm.config.js",
+      "./src/mikro-orm.config.ts",
       "./dist/mikro-orm.config.js"
     ]
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

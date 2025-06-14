@@ -11,7 +11,8 @@
     "emitDecoratorMetadata": true
   },
   "include": [
-    "./src/**/*.ts"
+    "./src/**/*.ts",
+    "src/mikro-orm.config.ts"
   ],
   "exclude": [
     "node_modules"

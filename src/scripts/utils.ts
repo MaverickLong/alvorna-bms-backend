@@ -20,22 +20,35 @@ import {
 import * as cheerio from "cheerio";
 
 // Axios (Web DL)
-// const axios = require('axios')
+import axios from "axios";
 // import { HttpsProxyAgent } from "https-proxy-agent";
 
-import fetch from "node-fetch";
-import { DifficultyTable } from "../entities/DifficultyTable.js";
-import { Song } from "../entities/Song.js";
+import { DifficultyTable } from "../entities/DifficultyTable.entity.js";
+import { Song } from "../entities/Song.entity.js";
 import mikroOrmConfig from "../mikro-orm.config.js";
-import { Chart } from "../entities/Chart.js";
+import { Chart } from "../entities/Chart.entity.js";
 
-async function fetchUrl(targetUrl: string) {
-  // const proxyUrl = `http://${config.proxy.host}:${config.proxy.port}`;
-  // const proxyAgent = new HttpsProxyAgent(proxyUrl);
-
-  // const response = await fetch(targetUrl, { agent: proxyAgent });
-  const response = await fetch(targetUrl);
-  return await response.text();
+async function fetchUrl(targetUrl: string): Promise<string> {
+  const RETRY_COUNT = 3;
+  for (let i = 1; i <= RETRY_COUNT; i++) {
+    const res = await axios
+      .get(targetUrl, {
+        signal: AbortSignal.timeout(10000),
+        responseType: "text",
+        transformResponse: [(data) => data],
+      })
+      .catch((e) => {
+        console.log(
+          `Error requesting ${targetUrl}\nError: ${e}\nTries ${i}/${RETRY_COUNT}`
+        );
+      });
+    if (res) {
+      return res.data;
+    }
+  }
+  throw Error(
+    `Unable to get data from ${targetUrl} after ${RETRY_COUNT} tries`
+  );
 }
 
 // // PostgreSQL
@@ -102,6 +115,10 @@ function processUrl(url: string, location: string) {
 // Given a BMS table, returns the header JSON.
 // TODO: Error Handling.
 async function getJsonHeaderUrl(url: string) {
+  if (url.includes(".json")) {
+    console.log("Already a JSON. Returning...");
+    return url;
+  }
   console.log("Requesting HTML frontend to get the meta tag.");
   const data = await fetchUrl(url);
   console.log("Got the meta tag.");

@@ -10,8 +10,10 @@ import config from "./config.js";
 // var axios = require('axios');
 import md5 from "md5";
 import fs from "fs";
-import { Chart } from "../entities/Chart.js";
-import { DifficultyTable } from "../entities/DifficultyTable.js";
+import { Chart } from "../entities/Chart.entity.js";
+import { DifficultyTable } from "../entities/DifficultyTable.entity.js";
+import { EntityManager, IsolationLevel } from "@mikro-orm/postgresql";
+import { exit } from "process";
 
 interface ChartInTable {
   md5?: string;
@@ -19,13 +21,16 @@ interface ChartInTable {
   title?: string;
 }
 
-async function cleanupCharts(difficultyTable: DifficultyTable) {
+async function cleanupCharts(
+  difficultyTable: DifficultyTable,
+  em: EntityManager
+) {
   // for all chart in difficultyTable.charts, remove the corresponding reference of
   // difficultyTable in chart.difficultyTables. if the chart.difficultyTables becomes
   // an empty set and chart.song is null, remove the chart from the database.
 
   // Load charts with their relationships populated
-  await DI.em.populate(difficultyTable, [
+  await em.populate(difficultyTable, [
     "charts.difficultyTables",
     "charts.song",
   ]);
@@ -44,20 +49,19 @@ async function cleanupCharts(difficultyTable: DifficultyTable) {
 
   // Process deletions
   for (const chart of chartsToDelete) {
-    DI.em.remove(chart);
+    em.remove(chart);
   }
 }
 
 async function insertChartToDatabase(
   tableInDatabase: DifficultyTable,
-  tableTyped: ChartInTable[]
+  tableTyped: ChartInTable[],
+  em: EntityManager
 ) {
   for (const chart of tableTyped) {
     const chartTyped = chart as ChartInTable;
     if (chartTyped.md5) {
-      const chartInDatabase = await DI.charts.findOne({
-        md5: chartTyped.md5,
-      });
+      const chartInDatabase = await em.findOne(Chart, { md5: chartTyped.md5 });
       if (chartInDatabase) {
         chartInDatabase.difficultyTables.add(tableInDatabase);
       } else {
@@ -65,10 +69,10 @@ async function insertChartToDatabase(
         newChart.name = chartTyped.title;
         newChart.md5 = chartTyped.md5;
         newChart.difficultyTables.add(tableInDatabase);
-        DI.em.persist(newChart);
+        em.persist(newChart);
       }
     } else if (chartTyped.sha1) {
-      const chartInDatabase = await DI.charts.findOne({
+      const chartInDatabase = await em.findOne(Chart, {
         sha1: chartTyped.sha1,
       });
       if (chartInDatabase) {
@@ -77,7 +81,8 @@ async function insertChartToDatabase(
         const newChart = new Chart();
         newChart.name = chartTyped.title;
         newChart.sha1 = chartTyped.sha1;
-        DI.em.persist(newChart);
+        newChart.difficultyTables.add(tableInDatabase);
+        em.persist(newChart);
       }
     } else {
       // We can't do anything about it. There is no information for us to inference the song.
@@ -85,12 +90,15 @@ async function insertChartToDatabase(
       const newChart = new Chart();
       newChart.name = chartTyped.title;
       newChart.difficultyTables.add(tableInDatabase);
-      DI.em.persist(newChart);
+      em.persist(newChart);
     }
   }
 }
 
-async function processTableUrl(tableUrl: string): Promise<void> {
+async function processTableUrl(
+  tableUrl: string,
+  em: EntityManager
+): Promise<void> {
   console.log("Getting JSON header URL from " + tableUrl);
   const jsonUrl = await utils.getJsonHeaderUrl(tableUrl);
 
@@ -122,7 +130,7 @@ async function processTableUrl(tableUrl: string): Promise<void> {
   headerData.data_url =
     config.urlPrefix + "/tables/" + tableUrlMd5 + "/table.json";
 
-  const tableInDatabase = await DI.tables.findOne({
+  const tableInDatabase = await em.findOne(DifficultyTable, {
     originalUrl: tableUrl,
   });
 
@@ -135,12 +143,15 @@ async function processTableUrl(tableUrl: string): Promise<void> {
 
       // For simplicity, we remove all songs existed in the table first, then append
       // the new ones afterwards.
-      cleanupCharts(tableInDatabase);
+      await cleanupCharts(tableInDatabase, em);
 
       // Insert the new entries.
-      insertChartToDatabase(tableInDatabase, tableTyped);
+      await insertChartToDatabase(tableInDatabase, tableTyped, em);
+
+      console.log("Updated Difficulty Table.");
     }
     // the table has not been updated otherwise. Skipping.
+    console.log("The table has not been updated. Skipping.");
   } else {
     // The difficultyTable has not present. Create a new table.
     const tableInDatabase = new DifficultyTable();
@@ -149,10 +160,12 @@ async function processTableUrl(tableUrl: string): Promise<void> {
     tableInDatabase.originalUrl = tableUrl;
     tableInDatabase.proxiedUrl =
       config.urlPrefix + "/tables/" + tableUrlMd5 + "/header.json";
-    DI.em.persist(tableInDatabase);
+    em.persist(tableInDatabase);
 
     // Insert the entries.
-    insertChartToDatabase(tableInDatabase, tableTyped);
+    await insertChartToDatabase(tableInDatabase, tableTyped, em);
+
+    console.log("Inserted new Difficulty Table.");
   }
 
   // Finally, overwrite the files nonetheless.
@@ -161,21 +174,32 @@ async function processTableUrl(tableUrl: string): Promise<void> {
   }
   fs.writeFileSync(storagePath + "header.json", JSON.stringify(headerData));
   fs.writeFileSync(storagePath + "table.json", JSON.stringify(table));
+
+  console.log("Written files to the storage.");
+
+  // Once everything's finished, flush!
+  await em.flush();
 }
 
-// TODO: Err Handling
 async function main() {
   // Updates all difficulty tables
+  const em = DI.em.fork();
   for (const tableUrl of config.diffTables) {
     try {
       // Async process
-      await processTableUrl(tableUrl);
+      await em.transactional(
+        async (em) => {
+          await processTableUrl(tableUrl, em);
+        },
+        {
+          isolationLevel: IsolationLevel.SERIALIZABLE,
+        }
+      );
     } catch (e) {
       console.log(`Process Failed for URL ${tableUrl}, error: ${e}`);
     }
   }
 }
 
-if (require.main === module) {
-  main();
-}
+await main();
+exit();

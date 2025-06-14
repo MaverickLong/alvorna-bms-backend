@@ -8,7 +8,7 @@ import {
   PrimaryKey,
   Property,
 } from "@mikro-orm/core";
-import { Chart } from "./Chart.js";
+import { Chart } from "./Chart.entity.js";
 
 @Entity()
 export class DifficultyTable extends BaseEntity {

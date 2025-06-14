@@ -2,7 +2,7 @@
 
 import { Router } from "express";
 import { DI } from "../index.js";
-import { Song } from "../entities/Song.js";
+import { Song } from "../entities/Song.entity.js";
 
 const router = Router();
 

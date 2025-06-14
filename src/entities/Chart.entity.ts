@@ -6,13 +6,17 @@ import {
   Entity,
   ManyToMany,
   ManyToOne,
+  PrimaryKey,
   Property,
 } from "@mikro-orm/core";
-import { Song } from "./Song.js";
-import { DifficultyTable } from "./DifficultyTable.js";
+import { Song } from "./Song.entity.js";
+import { DifficultyTable } from "./DifficultyTable.entity.js";
+import { v4 } from "uuid";
 
 @Entity()
 export class Chart extends BaseEntity {
+  @PrimaryKey()
+  uuid = v4();
   // Potentially a name for the chart. Might just use file name?
   @Property()
   name?: string;

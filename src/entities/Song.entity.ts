@@ -5,12 +5,17 @@ import {
   Collection,
   Entity,
   OneToMany,
+  PrimaryKey,
   Property,
 } from "@mikro-orm/core";
-import { Chart } from "./Chart.js";
+import { Chart } from "./Chart.entity.js";
+import { v4 } from "uuid";
 
 @Entity()
 export class Song extends BaseEntity {
+  @PrimaryKey()
+  uuid = v4();
+
   // Name of the song, using the package name as a reference.
   @Property()
   name!: string;
