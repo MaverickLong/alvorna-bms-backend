@@ -1,11 +1,36 @@
-import { MikroORM, RequestContext } from "@mikro-orm/postgresql";
+"use strict";
+
+import {
+  EntityManager,
+  EntityRepository,
+  MikroORM,
+  RequestContext,
+} from "@mikro-orm/postgresql";
 import mikroOrmConfig from "./mikro-orm.config.js";
 import express from "express";
+import { DifficultyTable } from "./entities/DifficultyTable.js";
+import { Song } from "./entities/Song.js";
 
-// initialize the ORM, loading the config file dynamically
-const orm = await MikroORM.init(mikroOrmConfig);
-const app = express();
+export const DI = {} as {
+  orm: MikroORM;
+  em: EntityManager;
+  tables: EntityRepository<DifficultyTable>;
+  songs: EntityRepository<Song>;
+};
 
-app.use((req, res, next) => {
-  RequestContext.create(orm.em, next);
+const PORT = process.env.PORT ?? 3000;
+
+DI.orm = await MikroORM.init(mikroOrmConfig);
+DI.em = DI.orm.em;
+DI.tables = DI.em.getRepository(DifficultyTable);
+DI.songs = DI.em.getRepository(Song);
+
+await DI.orm.schema.updateSchema();
+
+export const app = express();
+
+app.use((_req, _res, next) => RequestContext.create(DI.orm.em, next));
+
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });

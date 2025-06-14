@@ -1,3 +1,5 @@
+"use strict";
+
 import { defineConfig } from "@mikro-orm/postgresql";
 import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
 
