@@ -17,7 +17,7 @@ import { exit } from "process";
 
 interface ChartInTable {
   md5?: string;
-  sha1?: string;
+  sha256?: string;
   title?: string;
 }
 
@@ -71,16 +71,16 @@ async function insertChartToDatabase(
         newChart.difficultyTables.add(tableInDatabase);
         em.persist(newChart);
       }
-    } else if (chartTyped.sha1) {
+    } else if (chartTyped.sha256) {
       const chartInDatabase = await em.findOne(Chart, {
-        sha1: chartTyped.sha1,
+        sha256: chartTyped.sha256,
       });
       if (chartInDatabase) {
         chartInDatabase.difficultyTables.add(tableInDatabase);
       } else {
         const newChart = new Chart();
         newChart.name = chartTyped.title;
-        newChart.sha1 = chartTyped.sha1;
+        newChart.sha256 = chartTyped.sha256;
         newChart.difficultyTables.add(tableInDatabase);
         em.persist(newChart);
       }

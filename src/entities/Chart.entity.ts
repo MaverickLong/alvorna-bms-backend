@@ -25,7 +25,7 @@ export class Chart extends BaseEntity {
   @Property()
   md5?: string;
   @Property()
-  sha1?: string;
+  sha256?: string;
 
   // The song package that contains the chart.
   // TODO: Could there be two packages containing the same chart?

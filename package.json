@@ -17,6 +17,8 @@
   "dependencies": {
     "@mikro-orm/core": "^6.4.16",
     "@mikro-orm/postgresql": "^6.4.16",
+    "@types/adm-zip": "^0.5.7",
+    "adm-zip": "^0.5.16",
     "axios": "^1.10.0",
     "cheerio": "^1.1.0",
     "express": "^5.1.0",
