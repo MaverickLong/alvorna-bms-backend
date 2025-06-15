@@ -33,6 +33,7 @@ async function fetchUrl(targetUrl: string): Promise<string> {
   for (let i = 1; i <= RETRY_COUNT; i++) {
     const res = await axios
       .get(targetUrl, {
+        timeout: 10000,
         signal: AbortSignal.timeout(10000),
         responseType: "text",
         transformResponse: [(data) => data],
