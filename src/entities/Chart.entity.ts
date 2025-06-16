@@ -22,9 +22,9 @@ export class Chart extends BaseEntity {
   name?: string;
 
   // Hashes for the chart file.
-  @Property()
+  @Property({ unique: true })
   md5?: string;
-  @Property()
+  @Property({ unique: true })
   sha256?: string;
 
   // The song package that contains the chart.

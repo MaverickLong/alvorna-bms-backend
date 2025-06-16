@@ -16,4 +16,10 @@ export default defineConfig({
   metadataProvider: TsMorphMetadataProvider,
   // enable debug mode to log SQL queries and discovery information
   debug: false,
+  pool: {
+    min: 5,
+    max: 20,
+    acquireTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+  },
 });
