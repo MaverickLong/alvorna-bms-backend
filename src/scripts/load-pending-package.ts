@@ -68,7 +68,8 @@ async function processSongs(orm: MikroORM, config: Config) {
               );
 
               if (existingChart) {
-                if (existingChart.song) {
+                // If the chart exists in a different song, reject and rollback.
+                if (existingChart.song && existingChart.song != song) {
                   await logAndReject(
                     config,
                     folderPath,
@@ -76,13 +77,15 @@ async function processSongs(orm: MikroORM, config: Config) {
                   );
                   return;
                 }
-                wrap(existingChart).assign({ song });
+                // Assign changed fields
+                wrap(existingChart).assign({ song, localPath: filePath });
               } else {
                 em.create(Chart, {
                   md5,
                   sha256,
                   song,
                   name: path.basename(filePath),
+                  localPath: filePath,
                 });
               }
             }
